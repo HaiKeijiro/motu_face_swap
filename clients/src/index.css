@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+* {
+  font-family: "Poppins", sans-serif;
+}
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -9,6 +13,14 @@
   scrollbar-width: none; /* Hide scrollbar in Firefox */
 }
 
-.long-button {
-  @apply bg-[#002448] text-white w-3/5 h-36 pb-5 rounded-4xl font-bold transition-all text-6xl;
+.main-text {
+  @apply text-[3.25em] font-semibold text-[#002448];
+}
+
+.main-button {
+  @apply text-[3.25em] font-semibold bg-[#002448] text-white;
+}
+
+.height-input {
+  @apply h-[126px];
 }

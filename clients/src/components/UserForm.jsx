@@ -1,42 +1,35 @@
 const UserForm = ({ name, setName, phone, setPhone }) => {
-  const onNameChange = (e) => {
-    const value = e.target.value;
-    setName(value);
-    localStorage.setItem("name", value);
-  };
-
-  const onPhoneChange = (e) => {
-    const value = e.target.value;
-    setPhone(value);
-    localStorage.setItem("phone", value);
-  };
-
-  localStorage.setItem("name", name);
-  localStorage.setItem("phone", phone);
-
   return (
-    <div className="w-full flex flex-col items-center justify-center space-y-[6rem]">
-      <div className="text-center">
-        <h1 className="text-white text-[5em] font-bold">Name</h1>
-        <input
-          className="border w-4/5 h-32 text-[5em]"
-          type="text"
-          id="name"
-          name="name"
-          value={name}
-          onChange={onNameChange}
-        />
-      </div>
-      <div className="text-center">
-        <h1 className="text-white text-[5em] font-bold">Phone Number</h1>
-        <input
-          className="border w-4/5 h-32 text-[5em]"
-          type="number"
-          id="phone"
-          name="phone"
-          value={phone}
-          onChange={onPhoneChange}
-        />
+    <div className="w-4/5 mx-auto flex flex-col main-text">
+      <img src="/logo_text.png" alt="logo" className="w-1/2 mx-auto" />
+
+      <h1 className="text-center my-[52px]">Please Complete Your Data</h1>
+
+      <div className="flex flex-col items-center justify-center gap-y-[54px]">
+        <div className="w-full">
+          <label>Name</label>
+          <input
+            className="border-2 border-black rounded-3xl w-full height-input px-10"
+            type="text"
+            id="name"
+            name="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className="w-full">
+          <label>Phone Number</label>
+          <input
+            className="border-2 border-black rounded-3xl w-full height-input px-10"
+            type="number"
+            id="phone"
+            name="phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </div>
       </div>
     </div>
   );

@@ -6,7 +6,11 @@ import Gender from "./components/Gender";
 import Template from "./components/Template";
 import Capture from "./components/Capture";
 import Result from "./components/Result";
-import LongButton from "./components/ui/LongButton";
+
+import { saveUserData } from "./API";
+
+import StartButton from "./components/ui/StartButton";
+import SaveButton from "./components/ui/SaveButton";
 
 function App() {
   const [step, setStep] = useState(0);
@@ -15,35 +19,20 @@ function App() {
   const [animationDirection, setAnimationDirection] = useState("forward");
 
   // State for UserForm Component
-  const [name, setName] = useState(localStorage.getItem("name") || "");
-  const [phone, setPhone] = useState(localStorage.getItem("phone") || "");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
 
-  useEffect(() => {
-    const savedName = localStorage.getItem("name");
-    const savedPhone = localStorage.getItem("phone");
-    if (savedName) setName(savedName);
-    if (savedPhone) setPhone(savedPhone);
-  }, []);
-
-  // Save user data to database
   const handleUserData = async () => {
-    const name = localStorage.getItem("name");
-    const phone = localStorage.getItem("phone");
-
     const userData = {
-      name: name,
-      phone: phone,
+      name: name.trim(),
+      phone: phone.trim(),
     };
-
     const result = await saveUserData(userData);
 
     if (result) {
-      console.log("User data saved:", result);
-
-      // Remove data from localStorage
-      localStorage.clear();
+      console.log("User data saved successfully!");
     } else {
-      console.error("Failed to save user data");
+      console.error("Error saving user data");
     }
   };
 
@@ -58,7 +47,7 @@ function App() {
     setAnimationDirection("forward");
 
     setTimeout(() => {
-      if (step === 1) {
+      if (step === 0) {
         handleUserData();
       }
       setStep((prevStep) =>
@@ -87,11 +76,10 @@ function App() {
   };
 
   // Disable Next button if any field in UserForm is empty
-  const isNextDisabled = step === 1 && (!name.trim() || !phone.trim());
+  const isNextDisabled = step === 0 && (!name.trim() || !phone.trim());
 
   const backgroundImage = [
     "/ui/1.png",
-    "/ui/2.png",
     "/ui/3.png",
     "/ui/4.png",
     "/ui/5.png",
@@ -100,12 +88,11 @@ function App() {
   const steps = [
     <UserForm
       key={1}
+      onNext={nextStep}
       name={name}
       setName={setName}
       phone={phone}
       setPhone={setPhone}
-      onNext={nextStep}
-      onSaveUserData={handleUserData}
     />,
     <Gender key={2} onNext={nextStep} onBack={backStep} />,
     <Template key={3} onNext={nextStep} onBack={backStep} />,
@@ -130,7 +117,7 @@ function App() {
         }`}
       >
         <img src="/logo.png" alt="logo" className="w-1/2 mb-10" />
-        <LongButton text="Tap to Start" onClick={start} />
+        <StartButton text="Tap to Start" onClick={start} />
       </div>
 
       {started && (
@@ -154,9 +141,13 @@ function App() {
           </div>
 
           {/* Buttons */}
-          {step > 1 && step < 4 && (
+          {step < 4 && (
             <div className="flex justify-center items-center">
-              <LongButton text="Save & Next" onClick={nextStep} />
+              <SaveButton
+                text="Save & Next"
+                onClick={nextStep}
+                isDisabled={isNextDisabled}
+              />
             </div>
           )}
         </div>

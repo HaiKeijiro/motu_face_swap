@@ -1,13 +1,17 @@
-import axios from "axios";
+// Remove axios import as we'll use fetch instead
+// import axios from "axios";
 
 const API_BASE_URL = "http://127.0.0.1:5000/api";
 
 export const fetchTemplates = async (gender) => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/templates?folder=${gender}`
-    );
-    const filenames = response.data;
+    const response = await fetch(`${API_BASE_URL}/templates?folder=${gender}`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const filenames = await response.json();
 
     return filenames.map((filename) => ({
       filename,
@@ -27,6 +31,10 @@ export const swapFace = async (templateUrl, sourceImage) => {
   try {
     // Fetch the template file from the URL
     const response = await fetch(templateUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch template: ${response.status}`);
+    }
+
     const templateBlob = await response.blob();
     const templateFile = new File([templateBlob], "template.jpg", {
       type: templateBlob.type,
@@ -39,14 +47,19 @@ export const swapFace = async (templateUrl, sourceImage) => {
     formData.append("source", sourceImage, "source.jpg");
 
     // Send the POST request
-    const result = await axios.post(`${API_BASE_URL}/swap`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const result = await fetch(`${API_BASE_URL}/swap`, {
+      method: "POST",
+      body: formData,
     });
 
-    if (result.data.image) {
-      const swappedImageUrl = `data:image/jpeg;base64,${result.data.image}`;
+    if (!result.ok) {
+      throw new Error(`HTTP error! status: ${result.status}`);
+    }
+
+    const data = await result.json();
+
+    if (data.image) {
+      const swappedImageUrl = `data:image/jpeg;base64,${data.image}`;
       return swappedImageUrl;
     } else {
       console.error("Error: No image returned");
@@ -59,20 +72,18 @@ export const swapFace = async (templateUrl, sourceImage) => {
 };
 
 export const saveUserData = async (userData) => {
-  console.log("api triggered ", userData);
-
   try {
-    const response = await axios.post(
-      `${API_BASE_URL}/save-user-data`,
-      userData
-    );
+    const response = await fetch(`${API_BASE_URL}/save-user-data`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
 
-    if (response.status === 200) {
+    if (response.ok) {
       console.log("User data saved sucessfully!");
-      return response.data;
-    } else {
-      console.error("Error saving user data");
-      return null;
+      return await response.json();
     }
   } catch (error) {
     console.error("Error in saveUserData:", error);
@@ -82,18 +93,26 @@ export const saveUserData = async (userData) => {
 
 export const exportTableToCSV = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/export`, {
-      responseType: "blob", // To handle file download
-    });
+    const response = await fetch(`${API_BASE_URL}/export`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Get the blob data
+    const blob = await response.blob();
 
     // Create a downloadable link for the file
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "user_table.csv");
     document.body.appendChild(link);
     link.click();
     link.parentNode.removeChild(link);
+
+    // Clean up the URL object
+    window.URL.revokeObjectURL(url);
 
     return { success: true };
   } catch (error) {
@@ -104,8 +123,13 @@ export const exportTableToCSV = async () => {
 
 export const fetchPrinters = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/printer/config`);
-    return response.data;
+    const response = await fetch(`${API_BASE_URL}/printer/config`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Error fetching printers:", error);
     throw error;
@@ -114,8 +138,19 @@ export const fetchPrinters = async () => {
 
 export const updatePrinterConfig = async (config) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/printer/config`, config);
-    return response.data;
+    const response = await fetch(`${API_BASE_URL}/printer/config`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Error updating printer config:", error);
     throw error;
@@ -127,13 +162,16 @@ export const printImage = async (imageBlob) => {
   formData.append("image", imageBlob, "image.jpg");
 
   try {
-    const response = await axios.post(`${API_BASE_URL}/printer/print`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const response = await fetch(`${API_BASE_URL}/printer/print`, {
+      method: "POST",
+      body: formData,
     });
 
-    return response.data;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Error printing image:", error);
     throw error;
