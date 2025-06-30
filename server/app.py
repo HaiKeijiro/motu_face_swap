@@ -656,7 +656,7 @@ class FaceSwapApp:
         # Application configuration
         # Use relative path from the server directory to the assets directory
         project_root = Path(__file__).parent.parent
-        self.base_asset_dir = str(project_root / 'assets')
+        self.base_asset_dir = str(project_root / 'clients/src/assets')
         
         # Initialize hot folder monitor
         self.hot_folder_monitor = HotFolderMonitor(

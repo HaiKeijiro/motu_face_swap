@@ -11,6 +11,7 @@ import { saveUserData } from "./API";
 
 import StartButton from "./components/ui/StartButton";
 import SaveButton from "./components/ui/SaveButton";
+import SmallButtons from "./components/ui/SmallButtons";
 
 function App() {
   const [step, setStep] = useState(0);
@@ -67,7 +68,7 @@ function App() {
     setAnimationDirection("backward");
 
     setTimeout(() => {
-      setStep((prevStep) => (prevStep > 1 ? prevStep - 1 : prevStep));
+      setStep((prevStep) => (prevStep > 0 ? prevStep - 1 : prevStep));
 
       setTimeout(() => {
         setIsTransitioning(false);
@@ -78,12 +79,7 @@ function App() {
   // Disable Next button if any field in UserForm is empty
   const isNextDisabled = step === 0 && (!name.trim() || !phone.trim());
 
-  const backgroundImage = [
-    "/ui/1.png",
-    "/ui/3.png",
-    "/ui/4.png",
-    "/ui/5.png",
-  ];
+  const backgroundImage = ["/ui/1.png", "/ui/3.png", "/ui/4.png", "/ui/5.png"];
 
   const steps = [
     <UserForm
@@ -94,8 +90,8 @@ function App() {
       phone={phone}
       setPhone={setPhone}
     />,
-    <Gender key={2} onNext={nextStep} onBack={backStep} />,
-    <Template key={3} onNext={nextStep} onBack={backStep} />,
+    <Gender key={2} />,
+    <Template key={3} />,
     <Capture key={4} goTo={nextStep} goBack={backStep} />,
     <Result key={5} />,
   ];
@@ -141,13 +137,18 @@ function App() {
           </div>
 
           {/* Buttons */}
-          {step < 4 && (
+          {step < 2 && (
             <div className="flex justify-center items-center">
               <SaveButton
-                text="Save & Next"
+                text={step === 0 ? "Save & Next" : "Next"}
                 onClick={nextStep}
                 isDisabled={isNextDisabled}
               />
+            </div>
+          )}
+          {step > 1 && step < 4 && (
+            <div className="flex justify-center items-center">
+              <SmallButtons back={backStep} next={nextStep} />
             </div>
           )}
         </div>

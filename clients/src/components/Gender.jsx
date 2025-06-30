@@ -25,7 +25,7 @@ export default function Gender() {
       <h1>Choose Your Gender</h1>
       <div className="flex mx-auto justify-center items-center gap-6 mt-[38px]">
         {genders.map((gender) => (
-          <div>
+          <div key={gender.key}>
             <div
               className={`w-[472px] h-[571px] bg-[#002448] rounded-3xl relative mb-[38px] ${selectedGender === gender.key ? "border-[12px] border-[#002448]" : ""}`}
             >
