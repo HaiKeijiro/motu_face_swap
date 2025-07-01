@@ -263,7 +263,17 @@ class DatabaseManager:
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute(f"SELECT * FROM {self.table_name}")
+                # Select only relevant columns and format the date
+                cursor.execute(f"""
+                    SELECT 
+                        id as 'ID',
+                        name as 'Name',
+                        phone as 'Phone',
+                        DATE(created_at) as 'Date',
+                        TIME(created_at) as 'Time'
+                    FROM {self.table_name}
+                    ORDER BY created_at DESC
+                """)
                 rows = cursor.fetchall()
                 column_names = [description[0] for description in cursor.description]
                 
@@ -277,6 +287,42 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Failed to export data: {e}")
             return False
+
+    def get_csv_data(self) -> Optional[str]:
+        """Get user data as CSV string without saving to file."""
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                # Select only relevant columns and format the date
+                cursor.execute(f"""
+                    SELECT 
+                        id as 'ID',
+                        name as 'Name',
+                        phone as 'Phone',
+                        DATE(created_at) as 'Date',
+                        TIME(created_at) as 'Time'
+                    FROM {self.table_name}
+                    ORDER BY created_at ASC
+                """)
+                rows = cursor.fetchall()
+                column_names = [description[0] for description in cursor.description]
+                
+                # Create CSV in memory
+                from io import StringIO
+                csv_buffer = StringIO()
+                writer = csv.writer(csv_buffer)
+                writer.writerow(column_names)
+                writer.writerows(rows)
+                
+                csv_data = csv_buffer.getvalue()
+                csv_buffer.close()
+                
+                logger.info("CSV data generated in memory")
+                return csv_data
+                
+        except Exception as e:
+            logger.error(f"Failed to generate CSV data: {e}")
+            return None
 
 
 class ImagePrinter:
@@ -1114,14 +1160,29 @@ class FaceSwapApp:
         def export_to_csv():
             """Export user data to CSV."""
             try:
-                csv_file_path = "user_data_export.csv"
-                success = self.database.export_to_csv(csv_file_path)
+                # Generate CSV data in memory
+                csv_data = self.database.get_csv_data()
                 
-                if success:
-                    return send_file(csv_file_path, as_attachment=True)
+                if csv_data:
+                    # Create response with CSV data
+                    from flask import Response
+                    from datetime import datetime
+                    
+                    # Generate filename with current timestamp
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filename = f"user_data_export_{timestamp}.csv"
+                    
+                    response = Response(
+                        csv_data,
+                        mimetype='text/csv',
+                        headers={
+                            'Content-Disposition': f'attachment; filename="{filename}"'
+                        }
+                    )
+                    return response
                 else:
                     return jsonify({"error": "Export failed"}), 500
-                
+                    
             except Exception as e:
                 logger.error(f"Error exporting data: {e}")
                 return jsonify({"error": "Internal server error"}), 500
