@@ -60,7 +60,24 @@ export const swapFace = async (templateUrl, sourceImage) => {
 
     if (data.image) {
       const swappedImageUrl = `data:image/jpeg;base64,${data.image}`;
-      return swappedImageUrl;
+      
+      // Prepare the response object
+      const response = {
+        swappedImageUrl,
+        googleDrive: data.google_drive || null,
+        qrCode: data.qr_code ? `data:image/png;base64,${data.qr_code}` : null
+      };
+      
+      // Store additional data in localStorage for the Result component
+      if (data.google_drive) {
+        localStorage.setItem("googleDriveInfo", JSON.stringify(data.google_drive));
+      }
+      
+      if (data.qr_code) {
+        localStorage.setItem("qrCodeData", `data:image/png;base64,${data.qr_code}`);
+      }
+      
+      return response;
     } else {
       console.error("Error: No image returned");
       return null;

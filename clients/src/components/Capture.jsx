@@ -87,10 +87,19 @@ export default function Capture({ goBack, goTo }) {
     setIsLoading(true);
 
     try {
-      const swappedImageUrl = await swapFace(templateUrl, sourceFile);
-      if (swappedImageUrl) {
-        setCapturedPhoto(swappedImageUrl);
-        localStorage.setItem("swappedPhoto", swappedImageUrl);
+      const result = await swapFace(templateUrl, sourceFile);
+      if (result && result.swappedImageUrl) {
+        setCapturedPhoto(result.swappedImageUrl);
+        localStorage.setItem("swappedPhoto", result.swappedImageUrl);
+        
+        // Log Google Drive info if available
+        if (result.googleDrive) {
+          console.log("Image uploaded to Google Drive:", result.googleDrive);
+        }
+        
+        if (result.qrCode) {
+          console.log("QR code generated for gallery access");
+        }
       }
     } catch (error) {
       console.error("Error swapping face:", error);
