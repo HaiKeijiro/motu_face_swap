@@ -146,7 +146,7 @@ function App() {
               />
             </div>
           )}
-          {step > 1 && step < 4 && (
+          {step > 1 && step < 3 && (
             <div className="flex justify-center items-center">
               <SmallButtons back={backStep} next={nextStep} />
             </div>

@@ -37,16 +37,18 @@ export default function SmallButtons({ back, next }) {
   ];
 
   return (
-    <div className="flex gap-x-2">
-      {button.map((item) => (
-        <button
-          key={item.name}
-          onClick={item.name === "back" ? back : next}
-          className="bg-[#002448] w-[149px] h-[59px] text-white flex items-center justify-center rounded-full"
-        >
-          {item.icon}
-        </button>
-      ))}
+    <div className="flex flex-col gap-y-2 items-center">
+      <div className="flex gap-x-2">
+        {button.map((item) => (
+          <button
+            key={item.name}
+            onClick={item.name === "back" ? back : next}
+            className="bg-[#002448] w-[149px] h-[59px] text-white flex items-center justify-center rounded-full"
+          >
+            {item.icon}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
