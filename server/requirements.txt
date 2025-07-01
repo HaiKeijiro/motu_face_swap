@@ -5,8 +5,3 @@ Pillow>=10.1.0
 pywin32>=306
 watchdog>=3.0.0
 websocket-client>=1.6.4
-configparser
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
-qrcode[pil] 

@@ -15,7 +15,7 @@ export default function Capture({ goBack, goTo }) {
     return () => {
       if (videoRef.current?.srcObject) {
         const tracks = videoRef.current.srcObject.getTracks();
-        tracks.forEach(track => track.stop());
+        tracks.forEach((track) => track.stop());
       }
     };
   }, []);
@@ -24,7 +24,7 @@ export default function Capture({ goBack, goTo }) {
     let countdownInterval;
     if (isCountingDown && countdown > 0) {
       countdownInterval = setInterval(() => {
-        setCountdown(prev => prev - 1);
+        setCountdown((prev) => prev - 1);
       }, 1000);
     } else if (countdown === 0) {
       onCapture();
@@ -41,8 +41,8 @@ export default function Capture({ goBack, goTo }) {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' } // Request front camera
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" }, // Request front camera
       });
       videoRef.current.srcObject = stream;
 
@@ -64,7 +64,7 @@ export default function Capture({ goBack, goTo }) {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     const context = canvas.getContext("2d");
-    
+
     // Mirror the canvas to match the video preview
     context.scale(-1, 1);
     context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
@@ -87,19 +87,10 @@ export default function Capture({ goBack, goTo }) {
     setIsLoading(true);
 
     try {
-      const result = await swapFace(templateUrl, sourceFile);
-      if (result && result.swappedImageUrl) {
-        setCapturedPhoto(result.swappedImageUrl);
-        localStorage.setItem("swappedPhoto", result.swappedImageUrl);
-        
-        // Log Google Drive info if available
-        if (result.googleDrive) {
-          console.log("Image uploaded to Google Drive:", result.googleDrive);
-        }
-        
-        if (result.qrCode) {
-          console.log("QR code generated for gallery access");
-        }
+      const swappedImageUrl = await swapFace(templateUrl, sourceFile);
+      if (swappedImageUrl) {
+        setCapturedPhoto(swappedImageUrl);
+        localStorage.setItem("swappedPhoto", swappedImageUrl);
       }
     } catch (error) {
       console.error("Error swapping face:", error);
@@ -122,15 +113,15 @@ export default function Capture({ goBack, goTo }) {
           <img src="/loading.gif" alt="loading" className="m-auto w-2/5" />
         </div>
       )}
-      
+
       <div className="relative">
         <div className="w-[966px] h-[1526px] bg-black rounded-3xl flex items-center justify-center overflow-hidden">
           {isVideoVisible ? (
             <>
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                className="w-full h-full object-cover rounded-3xl transform scale-x-[-1]" 
+              <video
+                ref={videoRef}
+                autoPlay
+                className="w-full h-full object-cover rounded-3xl transform scale-x-[-1]"
               />
               {isCountingDown && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -145,7 +136,11 @@ export default function Capture({ goBack, goTo }) {
           ) : (
             capturedPhoto && (
               <img
-                src={typeof capturedPhoto === 'string' ? capturedPhoto : URL.createObjectURL(capturedPhoto)}
+                src={
+                  typeof capturedPhoto === "string"
+                    ? capturedPhoto
+                    : URL.createObjectURL(capturedPhoto)
+                }
                 alt="Captured"
                 className="w-full h-full object-cover rounded-3xl"
               />
@@ -158,14 +153,14 @@ export default function Capture({ goBack, goTo }) {
       <div className="flex mt-16 gap-x-[67px]">
         {isVideoVisible ? (
           <>
-            <button 
+            <button
               onClick={goBack}
               className="w-[418px] h-[126px] rounded-3xl border-4 border-[#002448] text-[3.25em] font-semibold"
               disabled={isCountingDown}
             >
               <span className="">Back</span>
             </button>
-            <button 
+            <button
               onClick={startCountdown}
               className="w-[418px] h-[126px] border-4 rounded-3xl main-button"
               disabled={isCountingDown}
@@ -175,13 +170,13 @@ export default function Capture({ goBack, goTo }) {
           </>
         ) : (
           <>
-            <button 
+            <button
               onClick={handleCancel}
               className="w-[418px] h-[126px] rounded-3xl border-4 border-[#002448] text-[3.25em] font-semibold"
             >
               <span className="">Retake</span>
             </button>
-            <button 
+            <button
               onClick={() => handleSwapFace(capturedPhoto)}
               className="w-[418px] h-[126px] border-4 rounded-3xl main-button"
             >

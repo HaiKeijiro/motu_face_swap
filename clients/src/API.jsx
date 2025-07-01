@@ -1,6 +1,3 @@
-// Remove axios import as we'll use fetch instead
-// import axios from "axios";
-
 const API_BASE_URL = "http://127.0.0.1:5000/api";
 
 export const fetchTemplates = async (gender) => {
@@ -60,24 +57,7 @@ export const swapFace = async (templateUrl, sourceImage) => {
 
     if (data.image) {
       const swappedImageUrl = `data:image/jpeg;base64,${data.image}`;
-      
-      // Prepare the response object
-      const response = {
-        swappedImageUrl,
-        googleDrive: data.google_drive || null,
-        qrCode: data.qr_code ? `data:image/png;base64,${data.qr_code}` : null
-      };
-      
-      // Store additional data in localStorage for the Result component
-      if (data.google_drive) {
-        localStorage.setItem("googleDriveInfo", JSON.stringify(data.google_drive));
-      }
-      
-      if (data.qr_code) {
-        localStorage.setItem("qrCodeData", `data:image/png;base64,${data.qr_code}`);
-      }
-      
-      return response;
+      return swappedImageUrl;
     } else {
       console.error("Error: No image returned");
       return null;
