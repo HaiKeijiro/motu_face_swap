@@ -90,12 +90,12 @@ export default function Print() {
             
             {/* Printer Selection */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-              <label htmlFor="select-printer" className="block text-2xl font-semibold mb-4 text-[#BF9A30]">
+              <label htmlFor="select-printer" className="block text-2xl font-semibold mb-4 text-[#002]">
                 📱 Select Printer
               </label>
               <select
                 id="select-printer"
-                className="text-black w-full text-xl p-4 rounded-lg border-2 border-transparent focus:border-[#BF9A30] focus:outline-none transition-all duration-300 bg-white/90"
+                className="text-black w-full text-xl p-4 rounded-lg border-2 border-transparent focus:border-[#002] focus:outline-none transition-all duration-300 bg-white/90"
                 value={selectedPrinter}
                 onChange={(e) => setSelectedPrinter(e.target.value)}
               >
@@ -107,18 +107,18 @@ export default function Print() {
                 ))}
               </select>
               {printers.length === 0 && (
-                <p className="text-yellow-300 text-lg mt-2">⚠️ No printers found. Please check your printer connections.</p>
+                <p className="text-[#002448] text-lg mt-2">⚠️ No printers found. Please check your printer connections.</p>
               )}
             </div>
 
             {/* Print Size Selection */}
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-              <label htmlFor="print-size" className="block text-2xl font-semibold mb-4 text-[#BF9A30]">
+              <label htmlFor="print-size" className="block text-2xl font-semibold mb-4 text-[#002]">
                 📏 Print Size
               </label>
               <select
                 id="print-size"
-                className="text-black w-full text-xl p-4 rounded-lg border-2 border-transparent focus:border-[#BF9A30] focus:outline-none transition-all duration-300 bg-white/90"
+                className="text-black w-full text-xl p-4 rounded-lg border-2 border-transparent focus:border-[#002] focus:outline-none transition-all duration-300 bg-white/90"
                 value={printSize}
                 onChange={(e) => setPrintSize(e.target.value)}
               >
@@ -128,8 +128,8 @@ export default function Print() {
             </div>
 
             {/* Settings Preview */}
-            <div className="bg-gradient-to-r from-[#BF9A30]/20 to-[#A68129]/20 backdrop-blur-sm rounded-xl p-6 border border-[#BF9A30]/30">
-              <h3 className="text-xl font-semibold mb-3 text-[#BF9A30]">📋 Current Settings</h3>
+            <div className="bg-gradient-to-r from-[#002]/20 to-[#A68129]/20 backdrop-blur-sm rounded-xl p-6 border border-[#002]/30">
+              <h3 className="text-xl font-semibold mb-3 text-[#002]">📋 Current Settings</h3>
               <div className="space-y-2 text-lg">
                 <div className="flex justify-between">
                   <span className="opacity-80">Printer:</span>
@@ -145,7 +145,7 @@ export default function Print() {
 
           {/* Save Button */}
           <button 
-            className={`bg-[#BF9A30] hover:bg-[#A68129] px-12 py-4 text-2xl font-semibold rounded-xl mt-10 transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-full max-w-md ${
+            className={`bg-[#002448] px-12 py-4 text-2xl font-semibold rounded-xl mt-10 transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-full max-w-md ${
               isSaving ? 'animate-pulse' : ''
             }`}
             onClick={saveSettings}
