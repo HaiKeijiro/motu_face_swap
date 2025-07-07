@@ -282,31 +282,55 @@ class DatabaseManager:
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                # Select only relevant columns and format the date
-                cursor.execute(f"""
-                    SELECT 
-                        id as 'ID',
-                        name as 'Name',
-                        phone as 'Phone',
-                        DATE(created_at) as 'Date',
-                        TIME(created_at) as 'Time'
-                    FROM {self.table_name}
-                    ORDER BY created_at ASC
-                """)
+                
+                # First, check what columns exist in the table
+                cursor.execute(f"PRAGMA table_info({self.table_name})")
+                columns_info = cursor.fetchall()
+                available_columns = [col[1] for col in columns_info]  # Column names are at index 1
+                
+                # Build the SELECT query based on available columns
+                select_parts = []
+                select_parts.append("id as 'ID'")
+                select_parts.append("name as 'Name'")
+                select_parts.append("phone as 'Phone'")
+                
+                # Add date/time columns if they exist
+                if 'created_at' in available_columns:
+                    select_parts.append("DATE(created_at) as 'Date'")
+                    select_parts.append("TIME(created_at) as 'Time'")
+                    order_by = "ORDER BY created_at ASC"
+                else:
+                    order_by = "ORDER BY id ASC"
+                
+                query = f"SELECT {', '.join(select_parts)} FROM {self.table_name} {order_by}"
+                cursor.execute(query)
+                
                 rows = cursor.fetchall()
                 column_names = [description[0] for description in cursor.description]
                 
-                # Create CSV in memory
+                # Create CSV in memory with proper phone formatting
                 from io import StringIO
                 csv_buffer = StringIO()
                 writer = csv.writer(csv_buffer)
                 writer.writerow(column_names)
-                writer.writerows(rows)
+                
+                # Format phone numbers to preserve leading zeros
+                formatted_rows = []
+                for row in rows:
+                    formatted_row = list(row)
+                    # Find the phone column index (should be index 2 based on the SELECT)
+                    phone_index = 2
+                    if len(formatted_row) > phone_index and formatted_row[phone_index]:
+                        # Format phone number to preserve leading zeros in Excel
+                        formatted_row[phone_index] = f"'{formatted_row[phone_index]}"
+                    formatted_rows.append(formatted_row)
+                
+                writer.writerows(formatted_rows)
                 
                 csv_data = csv_buffer.getvalue()
                 csv_buffer.close()
                 
-                logger.info("CSV data generated in memory")
+                logger.info("CSV data generated in memory with phone formatting")
                 return csv_data
                 
         except Exception as e:
