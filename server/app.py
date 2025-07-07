@@ -125,6 +125,14 @@ class ConfigManager:
             'enabled': 'true'
         }
         
+        # Add image saving configuration
+        self.config['ImageSaving'] = {
+            'enabled': 'true',
+            'save_folder': str('G:\My Drive\Motu Face Swap'), # modify here
+            'save_format': 'png',
+            'include_timestamp': 'true'
+        }
+        
         try:
             default_printer = win32print.GetDefaultPrinter()
         except Exception:
@@ -140,7 +148,7 @@ class ConfigManager:
     
     def _validate_config(self) -> None:
         """Validate configuration settings."""
-        required_sections = ['HotFolder', 'Printer']
+        required_sections = ['HotFolder', 'Printer', 'ImageSaving']
         for section in required_sections:
             if not self.config.has_section(section):
                 raise ConfigurationError(f"Missing required section: {section}")
@@ -154,6 +162,17 @@ class ConfigManager:
             logger.warning(f"Could not create hot folder: {e}")
             self.config['HotFolder']['enabled'] = 'false'
             self.save_config()
+            
+        # Ensure save folder exists if image saving is enabled
+        if self.is_image_saving_enabled():
+            save_folder_path = self.get_save_folder_path()
+            try:
+                os.makedirs(save_folder_path, exist_ok=True)
+                logger.info(f"Image save folder ready at: {save_folder_path}")
+            except Exception as e:
+                logger.warning(f"Could not create save folder: {e}")
+                self.config['ImageSaving']['enabled'] = 'false'
+                self.save_config()
     
     def save_config(self) -> None:
         """Save configuration to file."""
@@ -186,6 +205,34 @@ class ConfigManager:
             self.config.add_section(section)
         self.config[section][key] = value
         self.save_config()
+    
+    def get_save_folder_path(self) -> str:
+        """Get the image save folder path."""
+        if not self.config.has_section('ImageSaving'):
+            return str(Path(__file__).parent.parent / 'saved_images')
+        return self.config['ImageSaving']['save_folder']
+    
+    def is_image_saving_enabled(self) -> bool:
+        """Check if image saving is enabled."""
+        if not self.config.has_section('ImageSaving'):
+            return False
+        return self.config['ImageSaving'].getboolean('enabled')
+    
+    def get_image_saving_config(self) -> Dict[str, str]:
+        """Get image saving configuration."""
+        if not self.config.has_section('ImageSaving'):
+            return {
+                'enabled': 'false',
+                'save_folder': str(Path(__file__).parent.parent / 'saved_images'),
+                'save_format': 'jpg',
+                'include_timestamp': 'true'
+            }
+        return {
+            'enabled': self.config['ImageSaving'].get('enabled', 'false'),
+            'save_folder': self.config['ImageSaving'].get('save_folder', str(Path(__file__).parent.parent / 'saved_images')),
+            'save_format': self.config['ImageSaving'].get('save_format', 'jpg'),
+            'include_timestamp': self.config['ImageSaving'].get('include_timestamp', 'true')
+        }
 
 
 class DatabaseManager:
@@ -238,7 +285,7 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     "INSERT INTO user_table (name, phone) VALUES (?, ?)",
-                    (name, f"0{phone}")
+                    (name, f"{phone}")
                 )
                 conn.commit()
             logger.info(f"User data saved: {name}, {phone}")
@@ -322,7 +369,7 @@ class DatabaseManager:
                     phone_index = 2
                     if len(formatted_row) > phone_index and formatted_row[phone_index]:
                         # Format phone number to preserve leading zeros in Excel
-                        formatted_row[phone_index] = f"'{formatted_row[phone_index]}"
+                        formatted_row[phone_index] = f"{formatted_row[phone_index]}"
                     formatted_rows.append(formatted_row)
                 
                 writer.writerows(formatted_rows)
@@ -591,11 +638,12 @@ class HotFolderHandler(FileSystemEventHandler):
     """Handles hot folder file system events."""
     
     def __init__(self, face_swap_processor: FaceSwapProcessor, printer: ImagePrinter, 
-                 config_manager: ConfigManager, base_asset_dir: str):
+                 config_manager: ConfigManager, base_asset_dir: str, app_instance=None):
         self.face_swap_processor = face_swap_processor
         self.printer = printer
         self.config_manager = config_manager
         self.base_asset_dir = base_asset_dir
+        self.app_instance = app_instance
         self.processing = set()
         self.supported_formats = ('.jpg', '.jpeg', '.png')
     
@@ -623,6 +671,13 @@ class HotFolderHandler(FileSystemEventHandler):
             result_data = self.face_swap_processor.process_face_swap(template_path, image_path)
             
             if result_data:
+                # Save the generated image (isolated functionality)
+                saved_path = None
+                if hasattr(self, 'app_instance') and self.app_instance:
+                    saved_path = self.app_instance.save_generated_image(result_data, "hotfolder_faceswap")
+                    if saved_path:
+                        logger.info(f"Hot folder face swap result saved to: {saved_path}")
+                
                 # Save processed image temporarily
                 temp_output = os.path.join(tempfile.gettempdir(), f"processed_{uuid.uuid4()}.jpg")
                 with open(temp_output, 'wb') as f:
@@ -656,11 +711,12 @@ class HotFolderMonitor:
     """Monitors hot folder for new images."""
     
     def __init__(self, config_manager: ConfigManager, face_swap_processor: FaceSwapProcessor, 
-                 printer: ImagePrinter, base_asset_dir: str):
+                 printer: ImagePrinter, base_asset_dir: str, app_instance=None):
         self.config_manager = config_manager
         self.face_swap_processor = face_swap_processor
         self.printer = printer
         self.base_asset_dir = base_asset_dir
+        self.app_instance = app_instance
         self.observer = None
     
     def start(self) -> bool:
@@ -677,7 +733,7 @@ class HotFolderMonitor:
                 return False
             
             event_handler = HotFolderHandler(
-                self.face_swap_processor, self.printer, self.config_manager, self.base_asset_dir
+                self.face_swap_processor, self.printer, self.config_manager, self.base_asset_dir, self.app_instance
             )
             
             self.observer = Observer()
@@ -729,7 +785,7 @@ class FaceSwapApp:
         
         # Initialize hot folder monitor
         self.hot_folder_monitor = HotFolderMonitor(
-            self.config_manager, self.face_swap_processor, self.printer, self.base_asset_dir
+            self.config_manager, self.face_swap_processor, self.printer, self.base_asset_dir, self
         )
         
         # Set up routes
@@ -800,6 +856,11 @@ class FaceSwapApp:
                     result_data = self.face_swap_processor.process_face_swap(template_path, source_path)
                     
                     if result_data:
+                        # Save the generated image (isolated functionality)
+                        saved_path = self.save_generated_image(result_data, "api_faceswap")
+                        if saved_path:
+                            logger.info(f"Face swap result saved to: {saved_path}")
+                        
                         return jsonify({'image': base64.b64encode(result_data).decode('utf-8')})
                     else:
                         return jsonify({'error': 'Face swap processing failed'}), 500
@@ -944,6 +1005,81 @@ class FaceSwapApp:
                 logger.error(f"Error exporting data: {e}")
                 return jsonify({"error": "Internal server error"}), 500
         
+        @self.app.route('/api/image-saving/config', methods=['GET', 'PUT'])
+        def image_saving_config():
+            """Get or update image saving configuration."""
+            try:
+                if request.method == 'GET':
+                    save_config = self.config_manager.get_image_saving_config()
+                    
+                    return jsonify({
+                        'enabled': save_config['enabled'].lower() == 'true',
+                        'save_folder': save_config['save_folder'],
+                        'save_format': save_config['save_format'],
+                        'include_timestamp': save_config['include_timestamp'].lower() == 'true'
+                    })
+                
+                elif request.method == 'PUT':
+                    data = request.json
+                    
+                    if 'enabled' in data:
+                        self.config_manager.update_config('ImageSaving', 'enabled', str(data['enabled']).lower())
+                    
+                    if 'save_folder' in data:
+                        save_folder = data['save_folder'].strip()
+                        if save_folder:
+                            # Validate that the folder can be created
+                            try:
+                                os.makedirs(save_folder, exist_ok=True)
+                                self.config_manager.update_config('ImageSaving', 'save_folder', save_folder)
+                            except Exception as e:
+                                return jsonify({'error': f'Invalid save folder path: {e}'}), 400
+                    
+                    if 'save_format' in data:
+                        save_format = data['save_format'].lower()
+                        if save_format in ['jpg', 'jpeg', 'png']:
+                            self.config_manager.update_config('ImageSaving', 'save_format', save_format)
+                    
+                    if 'include_timestamp' in data:
+                        self.config_manager.update_config('ImageSaving', 'include_timestamp', str(data['include_timestamp']).lower())
+                    
+                    return jsonify({'message': 'Image saving configuration updated successfully'})
+                
+            except Exception as e:
+                logger.error(f"Error in image saving config: {e}")
+                return jsonify({'error': 'Internal server error'}), 500
+        
+        @self.app.route('/api/image-saving/test', methods=['POST'])
+        def test_image_saving():
+            """Test endpoint to verify image saving functionality."""
+            try:
+                if not self.config_manager.is_image_saving_enabled():
+                    return jsonify({'error': 'Image saving is disabled'}), 400
+                
+                # Create a simple test image
+                test_image = Image.new('RGB', (100, 100), color='red')
+                
+                # Convert to bytes
+                from io import BytesIO
+                img_bytes = BytesIO()
+                test_image.save(img_bytes, format='JPEG')
+                img_data = img_bytes.getvalue()
+                
+                # Save the test image
+                saved_path = self.save_generated_image(img_data, "test_image")
+                
+                if saved_path:
+                    return jsonify({
+                        'message': 'Image saving test successful',
+                        'saved_path': saved_path
+                    })
+                else:
+                    return jsonify({'error': 'Image saving test failed'}), 500
+                
+            except Exception as e:
+                logger.error(f"Error in image saving test: {e}")
+                return jsonify({'error': 'Internal server error'}), 500
+        
         @self.app.errorhandler(404)
         def not_found(error):
             return jsonify({"error": "Endpoint not found"}), 404
@@ -968,6 +1104,93 @@ class FaceSwapApp:
         except Exception as e:
             logger.error(f"Error listing images: {e}")
             return None
+    
+    def save_generated_image(self, image_data: bytes, prefix: str = "faceswap") -> Optional[str]:
+        """
+        Save generated image to the configured save folder.
+        
+        Args:
+            image_data: The image data to save
+            prefix: Prefix for the filename (kept for compatibility but not used)
+            
+        Returns:
+            str: Path to saved file or None if saving failed/disabled
+        """
+        try:
+            # Check if image saving is enabled
+            if not self.config_manager.is_image_saving_enabled():
+                logger.debug("Image saving is disabled")
+                return None
+            
+            # Get save configuration
+            save_config = self.config_manager.get_image_saving_config()
+            save_folder = save_config['save_folder']
+            save_format = save_config['save_format'].lower()
+            
+            # Ensure save folder exists
+            os.makedirs(save_folder, exist_ok=True)
+            
+            # Find the next available number
+            next_number = self._get_next_file_number(save_folder, save_format)
+            
+            # Generate simple filename with just the number
+            filename = f"{next_number}.{save_format}"
+            
+            # Full path for the saved file
+            save_path = os.path.join(save_folder, filename)
+            
+            # Save the image
+            with open(save_path, 'wb') as f:
+                f.write(image_data)
+            
+            logger.info(f"Generated image saved to: {save_path}")
+            return save_path
+            
+        except Exception as e:
+            logger.error(f"Failed to save generated image: {e}")
+            return None
+    
+    def _get_next_file_number(self, save_folder: str, save_format: str) -> int:
+        """
+        Get the next available file number for incremental naming.
+        
+        Args:
+            save_folder: The folder to check for existing files
+            save_format: The file format extension
+            
+        Returns:
+            int: The next available number
+        """
+        try:
+            import re
+            
+            if not os.path.exists(save_folder):
+                return 1
+            
+            # Get all files in the save folder
+            files = os.listdir(save_folder)
+            
+            # Filter files that match our pattern and extract numbers
+            numbers = []
+            
+            for file in files:
+                if file.lower().endswith(f'.{save_format}'):
+                    # Pattern: number.extension (e.g., 1.png, 2.png, etc.)
+                    pattern = rf'^(\d+)\.{re.escape(save_format)}$'
+                    
+                    match = re.match(pattern, file)
+                    if match:
+                        numbers.append(int(match.group(1)))
+            
+            # Return the next available number
+            if numbers:
+                return max(numbers) + 1
+            else:
+                return 1
+                
+        except Exception as e:
+            logger.error(f"Error getting next file number: {e}")
+            return 1
     
     def start_hot_folder_monitoring(self) -> None:
         """Start hot folder monitoring."""
