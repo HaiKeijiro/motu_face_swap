@@ -1,7 +1,14 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "GlacialIndifference";
+  src: url("../public/font/GlacialIndifference-Regular.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 * {
-  font-family: "Poppins", sans-serif;
+  font-family: "GlacialIndifference", sans-serif;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
