@@ -823,6 +823,10 @@ class FaceSwapApp:
         project_root = Path(__file__).parent.parent
         self.base_asset_dir = str(project_root / 'clients/src/assets')
         
+        # Overlay directory setup
+        self.overlay_dir = os.path.join(Path(__file__).parent, 'overlays')
+        os.makedirs(self.overlay_dir, exist_ok=True)
+        
         # Initialize hot folder monitor
         self.hot_folder_monitor = HotFolderMonitor(
             self.config_manager, self.face_swap_processor, self.printer, self.base_asset_dir, self
@@ -1118,6 +1122,52 @@ class FaceSwapApp:
                 
             except Exception as e:
                 logger.error(f"Error in image saving test: {e}")
+                return jsonify({'error': 'Internal server error'}), 500
+        
+        @self.app.route('/api/overlay', methods=['POST'])
+        def upload_overlay():
+            """Upload and configure overlay image for face swap workflow."""
+            try:
+                overlay = request.files.get('overlay')
+                if not overlay:
+                    return jsonify({'error': 'Overlay image is required'}), 400
+
+                # Generate unique filename for overlay
+                overlay_filename = f"overlay_{uuid.uuid4()}.png"
+                overlay_path = os.path.join(self.overlay_dir, overlay_filename)
+                overlay.save(overlay_path)
+
+                try:
+                    # Load and update workflow configuration
+                    with open(self.face_swap_processor.workflow_file, 'r', encoding='utf-8') as f:
+                        workflow = json.load(f)
+
+                    # Update node 10 with overlay image path
+                    if "10" in workflow and "inputs" in workflow["10"]:
+                        workflow["10"]["inputs"]["image"] = overlay_path
+                    else:
+                        logger.warning("Node 10 not found in workflow or missing inputs")
+
+                    # Save updated workflow
+                    with open(self.face_swap_processor.workflow_file, 'w', encoding='utf-8') as f:
+                        json.dump(workflow, f, indent=2)
+
+                    logger.info(f"Overlay uploaded and workflow updated: {overlay_path}")
+                    return jsonify({
+                        "message": "Overlay uploaded and configured successfully", 
+                        "path": overlay_path,
+                        "filename": overlay_filename
+                    })
+
+                except Exception as e:
+                    logger.error(f"Error updating workflow with overlay: {e}")
+                    # Clean up uploaded file if workflow update fails
+                    if os.path.exists(overlay_path):
+                        os.remove(overlay_path)
+                    return jsonify({"error": f"Failed to update workflow: {str(e)}"}), 500
+
+            except Exception as e:
+                logger.error(f"Error in overlay upload: {e}")
                 return jsonify({'error': 'Internal server error'}), 500
         
         @self.app.errorhandler(404)
